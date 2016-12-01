@@ -80,8 +80,12 @@ var req = https.request(getOptions, function(res) {
             console.error(body)
             process.exit(res.statusCode)
         }
+        var headers = {
+            'content-type': res.headers['content-type']
+        }
+
         edit(body, filename, function(err, result) {
-            if (!argv.readonly) putfile(result)
+            if (!argv.readonly) putfile(result, headers)
             else process.exit(0)
         })
     })
@@ -94,16 +98,15 @@ req.on('error', function(err) {
 
 req.end()
 
-function putfile(newtext) {
+function putfile(newtext, headers) {
+    headers['content-type'] = headers['content-type'] || 'text/plain; charset=utf8'
+    headers['content-length'] = strlen(newtext)
     var putOptions = {
         hostname: s3auth.bucket+'.s3.amazonaws.com',
         port: 443,
         path: filepath,
         method: 'PUT',
-        headers: {
-            'Content-Type': 'text/plain; charset=utf8',
-            'Content-Length': strlen(newtext)
-        }
+        headers: headers
     }
     awssign.signature(putOptions, hash(newtext))
     var req = https.request(putOptions, function(res) {
