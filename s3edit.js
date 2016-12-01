@@ -118,7 +118,9 @@ function putfile(newtext, headers) {
         })
         res.on('end', function() {
             console.error(body)
-            process.exit(res.statusCode)
+            bust(filepath, function() {
+                process.exit(res.statusCode)
+            })
         })
     })
     
@@ -132,4 +134,20 @@ function putfile(newtext, headers) {
 
 function hash(str) {
     return crypto.createHash('sha256').update(str, 'utf8').digest('hex')
+}
+
+function bust(path, cb) {
+  var options = {
+      port: 443,
+      hostname: 'www.stg.nytimes.com',
+      path: '/interactive' + path,
+      headers: {
+        'Fastly-Key': process.env.FASTLY_API_KEY,
+        'Method': 'PURGE'
+      }
+  }
+  var req = https.request(options, function(res) {
+      console.log(res);
+      cb()
+  })
 }
